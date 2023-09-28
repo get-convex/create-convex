@@ -1,9 +1,11 @@
 {
   "name": "create-convex",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "license": "Apache-2.0",
   "author": "Convex, Inc. <team@convex.dev>",
+  "repository": "https://github.com/get-convex/create-convex",
+  "homepage": "https://convex.dev",
   "bin": {
     "create-convex": "index.js"
   },
@@ -21,7 +23,6 @@
   "engines": {
     "node": "^18.0.0 || >=20.0.0"
   },
-  "homepage": "https://convex.dev",
   "devDependencies": {
     "@types/minimist": "^1.2.2",
     "@types/prompts": "^2.4.4",
