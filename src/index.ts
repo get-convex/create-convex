@@ -11,6 +11,7 @@ import prompts from "prompts";
 const argv = minimist<{
   t?: string;
   template?: string;
+  "dry-run"?: string;
 }>(process.argv.slice(2), { string: ["_"] });
 const cwd = process.cwd();
 
@@ -41,7 +42,7 @@ const AUTH: { name: string; display: string; frameworks?: string[] }[] = [
   },
   {
     name: "lucia",
-    display: "Lucia (convex-lucia-auth)",
+    display: "Lucia",
     frameworks: ["nextjs"],
   },
   {
@@ -138,11 +139,11 @@ async function init() {
           choices: (framework) =>
             AUTH.filter(
               ({ frameworks }) =>
-                frameworks === undefined || frameworks.includes(framework)
-            ).map((variant) => {
+                frameworks === undefined || frameworks.includes(framework.name)
+            ).map((auth) => {
               return {
-                title: variant.display || variant.name,
-                value: variant.name,
+                title: auth.display || auth.name,
+                value: auth.name,
               };
             }),
         },
@@ -174,12 +175,21 @@ async function init() {
     ? framework.name +
       (framework.name === "bare"
         ? ""
-        : (auth ? "-" + auth.name : "") + "-shadcn")
+        : (auth !== "none" ? "-" + auth : "") + "-shadcn")
     : argTemplate!;
 
   console.log(`\nSetting up...`);
 
   const repo = `https://github.com/get-convex/template-${template}#main`;
+
+  if (argv["dry-run"]) {
+    console.log(`\n${green(`✔`)} Would have fetched template from:`);
+    console.log(`    ${repo}`);
+    console.log("  into:");
+    console.log(`    ${root}`);
+    return;
+  }
+
   try {
     await degit(repo).clone(root);
   } catch (error) {
