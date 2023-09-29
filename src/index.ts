@@ -1,10 +1,10 @@
 import spawn from "cross-spawn";
+import degit from "degit";
 import fs from "fs";
 import { green, red, reset } from "kolorist";
 import minimist from "minimist";
 import path from "path";
 import prompts from "prompts";
-import { fileURLToPath } from "url";
 
 // Avoids autoconversion to number of the project name by defining that the args
 // non associated with an option ( _ ) needs to be parsed as a string. See #4606
@@ -20,21 +20,21 @@ type Framework = {
 };
 
 const FRAMEWORKS: Framework[] = [
-  // {
-  //   name: "react-vite",
-  //   display: "React (Vite)",
-  // },
-  // {
-  //   name: "nextjs",
-  //   display: "Next.js",
-  // },
   {
-    name: "none",
+    name: "nextjs",
+    display: "Next.js",
+  },
+  {
+    name: "react-vite",
+    display: "React (Vite)",
+  },
+  {
+    name: "bare",
     display: "none",
   },
 ];
 
-const AUTH: { name: string; display: string }[] = [
+const AUTH: { name: string; display: string; frameworks?: string[] }[] = [
   {
     name: "clerk",
     display: "Clerk",
@@ -42,6 +42,7 @@ const AUTH: { name: string; display: string }[] = [
   {
     name: "lucia",
     display: "Lucia (convex-lucia-auth)",
+    frameworks: ["nextjs"],
   },
   {
     name: "none",
@@ -52,10 +53,6 @@ const AUTH: { name: string; display: string }[] = [
 const TEMPLATES = FRAMEWORKS.map(
   (f) => AUTH.map((v) => f.name + "_" + v.name) || [f.name]
 ).reduce((a, b) => a.concat(b), []);
-
-const renameFiles: Record<string, string | undefined> = {
-  _gitignore: ".gitignore",
-};
 
 const defaultTargetDir = "my-app";
 
@@ -134,16 +131,20 @@ async function init() {
           }),
         },
         {
-          type: (framework) => (framework.name === "none" ? null : "select"),
+          type: (framework) => (framework.name === "bare" ? null : "select"),
           name: "auth",
           hint: "Use arrow-keys, <return> to confirm",
           message: reset("Choose user authentication solution:"),
-          choices: AUTH.map((variant) => {
-            return {
-              title: variant.display || variant.name,
-              value: variant.name,
-            };
-          }),
+          choices: (framework) =>
+            AUTH.filter(
+              ({ frameworks }) =>
+                frameworks === undefined || frameworks.includes(framework)
+            ).map((variant) => {
+              return {
+                title: variant.display || variant.name,
+                value: variant.name,
+              };
+            }),
         },
       ],
       {
@@ -170,33 +171,29 @@ async function init() {
 
   // determine template
   const template: string = framework
-    ? framework?.name + "-" + (auth?.name ?? "none")
+    ? framework.name +
+      (framework.name === "bare"
+        ? ""
+        : (auth ? "-" + auth.name : "") + "-shadcn")
     : argTemplate!;
 
   console.log(`\nSetting up...`);
 
-  const templateDir = path.resolve(
-    fileURLToPath(import.meta.url),
-    "../..",
-    `template-${template}`
-  );
-
-  const write = (file: string, content?: string) => {
-    const targetPath = path.join(root, renameFiles[file] ?? file);
-    if (content) {
-      fs.writeFileSync(targetPath, content);
-    } else {
-      copy(path.join(templateDir, file), targetPath);
-    }
-  };
-
-  const files = fs.readdirSync(templateDir);
-  for (const file of files.filter((f) => f !== "package.json")) {
-    write(file);
+  const repo = `https://github.com/get-convex/template-${template}#main`;
+  try {
+    await degit(repo).clone(root);
+  } catch (error) {
+    console.log(red(`✖ Failed to download template from \`${repo}\``));
+    return;
   }
 
+  const write = (file: string, content: string) => {
+    const targetPath = path.join(root, file);
+    fs.writeFileSync(targetPath, content);
+  };
+
   const pkg = JSON.parse(
-    fs.readFileSync(path.join(templateDir, `package.json`), "utf-8")
+    fs.readFileSync(path.join(root, `package.json`), "utf-8")
   );
 
   pkg.name = packageName || getProjectName();
