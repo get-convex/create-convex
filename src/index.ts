@@ -51,9 +51,12 @@ const AUTH: { name: string; display: string; frameworks?: string[] }[] = [
   },
 ];
 
-const TEMPLATES = FRAMEWORKS.map(
-  (f) => AUTH.map((v) => f.name + "_" + v.name) || [f.name]
-).reduce((a, b) => a.concat(b), []);
+function authOptions(framework: Framework) {
+  return AUTH.filter(
+    ({ frameworks }) =>
+      frameworks === undefined || frameworks.includes(framework.name)
+  );
+}
 
 const defaultTargetDir = "my-app";
 
@@ -113,16 +116,10 @@ async function init() {
             isValidPackageName(dir) || "Invalid package.json name",
         },
         {
-          type:
-            argTemplate && TEMPLATES.includes(argTemplate) ? null : "select",
+          type: argTemplate ? null : "select",
           name: "framework",
           hint: "Use arrow-keys, <return> to confirm",
-          message:
-            typeof argTemplate === "string" && !TEMPLATES.includes(argTemplate)
-              ? reset(
-                  `"${argTemplate}" isn't a valid template. Please choose from below: `
-                )
-              : reset("Choose a client:"),
+          message: reset("Choose a client:"),
           initial: 0,
           choices: FRAMEWORKS.map((framework) => {
             return {
@@ -132,15 +129,13 @@ async function init() {
           }),
         },
         {
-          type: (framework) => (framework.name === "bare" ? null : "select"),
+          type: (framework) =>
+            argTemplate ? null : framework.name === "bare" ? null : "select",
           name: "auth",
           hint: "Use arrow-keys, <return> to confirm",
           message: reset("Choose user authentication solution:"),
           choices: (framework) =>
-            AUTH.filter(
-              ({ frameworks }) =>
-                frameworks === undefined || frameworks.includes(framework.name)
-            ).map((auth) => {
+            authOptions(framework).map((auth) => {
               return {
                 title: auth.display || auth.name,
                 value: auth.name,
@@ -171,16 +166,22 @@ async function init() {
   }
 
   // determine template
-  const template: string = framework
+  const givenTemplate: string = framework
     ? framework.name +
       (framework.name === "bare"
         ? ""
         : (auth !== "none" ? "-" + auth : "") + "-shadcn")
     : argTemplate!;
 
+  const template = givenTemplate.includes("/")
+    ? givenTemplate.includes("#")
+      ? givenTemplate
+      : givenTemplate + "#main"
+    : `get-convex/template-${givenTemplate}#main`;
+
   console.log(`\nSetting up...`);
 
-  const repo = `https://github.com/get-convex/template-${template}#main`;
+  const repo = `https://github.com/${template}`;
 
   if (argv["dry-run"]) {
     console.log(`\n${green(`✔`)} Would have fetched template from:`);
