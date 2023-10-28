@@ -1,7 +1,7 @@
 import spawn from "cross-spawn";
 import degit from "degit";
 import fs from "fs";
-import { green, red, reset } from "kolorist";
+import { bold, green, red, reset } from "kolorist";
 import minimist from "minimist";
 import path from "path";
 import prompts from "prompts";
@@ -23,7 +23,7 @@ type Framework = {
 const FRAMEWORKS: Framework[] = [
   {
     name: "nextjs",
-    display: "Next.js",
+    display: "Next.js App Router",
   },
   {
     name: "react-vite",
@@ -32,6 +32,10 @@ const FRAMEWORKS: Framework[] = [
   {
     name: "bare",
     display: "none",
+  },
+  {
+    name: "other",
+    display: "other",
   },
 ];
 
@@ -129,8 +133,21 @@ async function init() {
           }),
         },
         {
-          type: (framework) =>
-            argTemplate ? null : framework.name === "bare" ? null : "select",
+          type: (framework) => {
+            if (framework.name === "other") {
+              throw new Error(
+                red("✖") +
+                  " Follow one of the quickstarts at " +
+                  bold("https://docs.convex.dev/quickstarts")
+              );
+            }
+
+            return argTemplate
+              ? null
+              : framework.name === "bare"
+              ? null
+              : "select";
+          },
           name: "auth",
           hint: "Use arrow-keys, <return> to confirm",
           message: reset("Choose user authentication solution:"),
