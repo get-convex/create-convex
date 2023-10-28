@@ -41,13 +41,13 @@ const FRAMEWORKS: Framework[] = [
 
 const AUTH: { name: string; display: string; frameworks?: string[] }[] = [
   {
-    name: "clerk",
-    display: "Clerk",
+    name: "lucia",
+    display: "Email & Password",
+    frameworks: ["nextjs"],
   },
   {
-    name: "lucia",
-    display: "Lucia",
-    frameworks: ["nextjs"],
+    name: "clerk",
+    display: "Clerk (requires Clerk account)",
   },
   {
     name: "none",
@@ -150,7 +150,7 @@ async function init() {
           },
           name: "auth",
           hint: "Use arrow-keys, <return> to confirm",
-          message: reset("Choose user authentication solution:"),
+          message: reset("Choose user authentication:"),
           choices: (framework) =>
             authOptions(framework).map((auth) => {
               return {
