@@ -1,4 +1,6 @@
-# create-convex
+# create-convex - DEPRECATED REPO
+
+This project now lives in https://github.com/get-convex/templates.
 
 ## Scaffolding Your First Convex Project
 
